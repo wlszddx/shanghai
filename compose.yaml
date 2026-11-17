@@ -1,0 +1,27 @@
+services:
+  expo-lead-agent:
+    build: .
+    restart: unless-stopped
+    init: true
+    env_file:
+      - .env
+    environment:
+      HOST: 0.0.0.0
+      PORT: 4173
+      EXPO_TEST_DATA: 0
+      LEADS_FILE: /app/data/leads.json
+      PREFERENCES_FILE: /app/data/preferences.json
+    ports:
+      - "127.0.0.1:4174:4173"
+    volumes:
+      - agent-data:/app/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  agent-data:

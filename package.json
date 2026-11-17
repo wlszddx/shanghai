@@ -1,0 +1,12 @@
+{
+  "name": "expo-copilot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "展会线索跟进 Agent 的可运行 MVP",
+  "scripts": {
+    "dev": "node server.js",
+    "dev:test": "node server.js --test-data",
+    "start": "node server.js",
+    "test": "node --test"
+  }
+}
