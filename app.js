@@ -159,7 +159,7 @@
     analyser.fftSize = 1024;
     voiceContext.createMediaStreamSource(stream).connect(analyser);
     const samples = new Float32Array(analyser.fftSize);
-    const speechLevel = 0.015, silenceMs = 2200, maxMs = 120000, noSpeechMs = 12000;
+    const speechLevel = 0.015, silenceMs = 5000, maxMs = 120000, noSpeechMs = 12000;
     const status = $('#record-status');
     const startedAt = Date.now();
     let speechFrames = 0, silenceStartedAt = 0;
@@ -204,7 +204,7 @@
         } catch (error) { status.textContent = error.message || '转写失败'; }
         $('#stop-record').hidden = true; $('#start-record').hidden = false;
       };
-      recorder.start(); monitorVoice(stream); $('#record-status').textContent = '录音中…停顿约 2 秒会自动结束'; $('#start-record').hidden = true; $('#stop-record').hidden = false;
+      recorder.start(); monitorVoice(stream); $('#record-status').textContent = '录音中…停顿约 5 秒会自动结束'; $('#start-record').hidden = true; $('#stop-record').hidden = false;
     } catch { $('#record-status').textContent = '无法访问麦克风，请检查浏览器权限'; }
   };
   $('#stop-record').onclick = () => { if (recorder?.state === 'recording') recorder.stop(); };
