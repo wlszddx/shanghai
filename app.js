@@ -146,6 +146,38 @@
   function copyText(value) { navigator.clipboard?.writeText(value).then(() => toast('已复制到剪贴板')).catch(() => toast('浏览器暂不支持复制')); }
 
   let recorder = null, recordingChunks = [], recordingStartedAt = 0, recordingTimestamp = '';
+  let voiceTimer = null, voiceContext = null;
+  function stopVoiceMonitor() {
+    if (voiceTimer) { clearInterval(voiceTimer); voiceTimer = null; }
+    if (voiceContext) { voiceContext.close().catch(() => {}); voiceContext = null; }
+  }
+  function monitorVoice(stream) {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    voiceContext = new AudioContextClass();
+    const analyser = voiceContext.createAnalyser();
+    analyser.fftSize = 1024;
+    voiceContext.createMediaStreamSource(stream).connect(analyser);
+    const samples = new Float32Array(analyser.fftSize);
+    const speechLevel = 0.015, silenceMs = 2200, maxMs = 120000, noSpeechMs = 12000;
+    const status = $('#record-status');
+    const startedAt = Date.now();
+    let speechFrames = 0, silenceStartedAt = 0;
+    voiceTimer = setInterval(() => {
+      if (!recorder || recorder.state !== 'recording') { stopVoiceMonitor(); return; }
+      analyser.getFloatTimeDomainData(samples);
+      let energy = 0;
+      for (const value of samples) energy += value * value;
+      const now = Date.now();
+      if (Math.sqrt(energy / samples.length) >= speechLevel) { speechFrames++; silenceStartedAt = 0; }
+      else if (speechFrames >= 3) {
+        if (!silenceStartedAt) silenceStartedAt = now;
+        if (now - silenceStartedAt >= silenceMs) { status.textContent = '检测到停顿，正在结束录音…'; recorder.stop(); return; }
+      }
+      if (speechFrames < 3 && now - startedAt >= noSpeechMs) { status.textContent = '没有检测到语音，已自动结束'; recorder.stop(); return; }
+      if (now - startedAt >= maxMs) { status.textContent = '已达到 2 分钟上限，正在结束录音…'; recorder.stop(); }
+    }, 100);
+  }
   $('#start-record').onclick = async () => {
     if (!sttEnabled || !navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) { toast('当前浏览器无法录音，请检查 HTTPS 或 localhost 权限'); return; }
     try {
@@ -153,6 +185,7 @@
       recorder = new MediaRecorder(stream); recordingChunks = []; recordingStartedAt = Date.now(); recordingTimestamp = new Date(recordingStartedAt).toISOString();
       recorder.ondataavailable = event => { if (event.data.size) recordingChunks.push(event.data); };
       recorder.onstop = async () => {
+        stopVoiceMonitor();
         stream.getTracks().forEach(track => track.stop());
         const status = $('#record-status'); status.textContent = '正在转写录音…';
         try {
@@ -171,7 +204,7 @@
         } catch (error) { status.textContent = error.message || '转写失败'; }
         $('#stop-record').hidden = true; $('#start-record').hidden = false;
       };
-      recorder.start(); $('#record-status').textContent = '录音中…结束谈话后点击停止'; $('#start-record').hidden = true; $('#stop-record').hidden = false;
+      recorder.start(); monitorVoice(stream); $('#record-status').textContent = '录音中…停顿约 2 秒会自动结束'; $('#start-record').hidden = true; $('#stop-record').hidden = false;
     } catch { $('#record-status').textContent = '无法访问麦克风，请检查浏览器权限'; }
   };
   $('#stop-record').onclick = () => { if (recorder?.state === 'recording') recorder.stop(); };
