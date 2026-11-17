@@ -248,6 +248,8 @@ test('Tencent ASR accepts browser audio, signs the request, converts returned ti
       assert.equal(parsed.searchParams.get('secretid'), 'secret-id');
       assert.equal(parsed.searchParams.get('engine_type'), '16k_zh_en');
       assert.equal(parsed.searchParams.get('voice_format'), 'wav');
+      assert.equal(parsed.searchParams.get('speaker_diarization'), '1');
+      assert.equal(parsed.searchParams.get('speaker_number'), '2');
       assert.equal(options.method, 'POST');
       assert.equal(options.headers['Content-Type'], 'application/octet-stream');
       assert.equal(options.body.toString(), 'wav-audio');
@@ -255,8 +257,10 @@ test('Tencent ASR accepts browser audio, signs the request, converts returned ti
       const canonical = `POSTasr.cloud.tencent.com${parsed.pathname}?${new URLSearchParams(sorted).toString()}`;
       const expectedSignature = crypto.createHmac('sha1', 'secret-key').update(canonical).digest('base64');
       assert.equal(options.headers.Authorization, expectedSignature);
-      return { ok: true, json: async () => ({ code: 0, flash_result: [{ text: '正在寻找供应商。', sentence_list: [
-        { text: '正在寻找供应商。', start_time: 450, end_time: 1620 }
+      return { ok: true, json: async () => ({ code: 0, flash_result: [{ text: '正在寻找供应商。我们是做包装设备的。下季度有采购计划。', sentence_list: [
+        { text: '正在寻找供应商。', start_time: 450, end_time: 1620, speaker_id: 0 },
+        { text: '我们是做包装设备的。', start_time: 1700, end_time: 3200, speaker_id: 1 },
+        { text: '下季度有采购计划。', start_time: 3300, end_time: 4500, speaker_id: 0 }
       ] }] }) };
     }
   } });
@@ -270,5 +274,9 @@ test('Tencent ASR accepts browser audio, signs the request, converts returned ti
   const response = await request(server, 'POST', '/api/transcribe', body, { 'content-type': `multipart/form-data; boundary=${boundary}` });
   assert.equal(response.status, 200, JSON.stringify(response.json()));
   assert.equal(called, true);
-  assert.deepEqual(response.json(), { text: '正在寻找供应商。', segments: [{ startMs: 450, endMs: 1620, text: '正在寻找供应商。' }] });
+  assert.deepEqual(response.json(), { text: '说话人1：正在寻找供应商。\n说话人2：我们是做包装设备的。\n说话人1：下季度有采购计划。', segments: [
+    { startMs: 450, endMs: 1620, text: '正在寻找供应商。', speaker: 0 },
+    { startMs: 1700, endMs: 3200, text: '我们是做包装设备的。', speaker: 1 },
+    { startMs: 3300, endMs: 4500, text: '下季度有采购计划。', speaker: 0 }
+  ] });
 });
