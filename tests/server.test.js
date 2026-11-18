@@ -192,7 +192,7 @@ test('projects persist per data directory and project classification keeps only 
         summary: '明确表达现阶段没有采购需求。', contact: { name: ' 张三 ', company: '包装公司', role: '' }, projects: [
           { projectId: 'p1', fit: 'suitable', summary: '有意向', evidence: ['我们正在考虑下季度采购'], nextStep: '确认预算。' },
           { projectId: 'p2', fit: 'unsuitable', summary: '目前无采购需求', evidence: ['没有采购需求'], nextStep: '暂缓跟进。' }
-        ]
+        ], followUp: ' 张三您好，今天聊到的下季度采购计划，方便约时间再确认一下吗？ '
       }) } }] }) };
     }
   } });
@@ -207,11 +207,36 @@ test('projects persist per data directory and project classification keeps only 
   assert.equal(classified.status, 200);
   const matches = classified.json().projectMatches;
   assert.deepEqual(classified.json().contact, { name: '张三', company: '包装公司', role: '' });
+  assert.equal(classified.json().followUp, '张三您好，今天聊到的下季度采购计划，方便约时间再确认一下吗？');
   assert.equal(matches.length, 2);
   assert.equal(matches[0].fit, 'uncertain');
   assert.deepEqual(matches[0].evidence, []);
   assert.equal(matches[1].fit, 'unsuitable');
   assert.deepEqual(matches[1].evidence, ['没有采购需求']);
+});
+
+test('project draft endpoint turns a business brief into sanitized criteria', async t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'expo-copilot-draft-'));
+  const server = createServer({ dataFile: path.join(dir, 'leads.json'), llmConfig: {
+    baseUrl: 'https://example.test/v1', apiKey: 'test-key', model: 'test-model', timeoutMs: 1000,
+    fetch: async (_url, options) => {
+      const sent = JSON.parse(options.body);
+      assert.match(sent.messages[1].content, /视觉检测/);
+      return { ok: true, json: async () => ({ choices: [{ message: { content: JSON.stringify({
+        name: ' 视觉检测项目 ', targetCustomer: '正在评估产线改造的制造企业',
+        mustHave: ['正在评估产线改造'], niceToHave: ['已有预算'], disqualifiers: '暂无采购计划\n'
+      }) } }] }) };
+    }
+  } });
+  t.after(() => { server.close(); fs.rmSync(dir, { recursive: true, force: true }); });
+  const response = await request(server, 'POST', '/api/agent/projects-draft', { brief: '我们卖视觉检测设备，客户是制造企业。' });
+  assert.equal(response.status, 200, JSON.stringify(response.json()));
+  const project = response.json().project;
+  assert.equal(project.name, '视觉检测项目');
+  assert.equal(project.targetCustomer, '正在评估产线改造的制造企业');
+  assert.deepEqual(project.mustHave, ['正在评估产线改造']);
+  assert.deepEqual(project.niceToHave, ['已有预算']);
+  assert.deepEqual(project.disqualifiers, ['暂无采购计划']);
 });
 
 test('transcription endpoint forwards audio to configured provider and returns timed segments', async t => {

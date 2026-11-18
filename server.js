@@ -185,7 +185,7 @@ async function analyzeProjectsWithModel(text, rawProjects, config) {
       method: 'POST', signal: controller.signal,
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.apiKey}` },
       body: JSON.stringify({ model: config.model, temperature: 0, max_tokens: config.maxTokens || 1200, messages: [
-        { role: 'system', content: '你是展会销售线索匹配助手。将一段真实谈话分别对照每个项目的目标客户、必选条件、加分条件和排除项，判断是否适合该项目。不要强行归入某个项目；可同时匹配多个项目。fit 只能是 suitable（有明确证据支持且无明确排除项）、uncertain（信息不足或有矛盾）、unsuitable（有明确证据不符合或命中排除项）。不能因未提及而判为不合适。每条 evidence 必须是谈话原文连续逐字一致的片段。提供简短理由和下一步建议。输出严格 JSON：{"summary":"整体摘要","contact":{"name":"","company":"","role":""},"projects":[{"projectId":"项目ID","fit":"suitable|uncertain|unsuitable","summary":"匹配理由","evidence":["原文片段"],"nextStep":"建议"}]}。contact 只填写谈话中被明确说出的访客姓名、公司、职位；未提及或不确定一律空字符串，禁止猜测。每个输入项目都必须输出一条结果，不要输出输入以外的项目。' },
+        { role: 'system', content: '你是展会销售线索匹配助手。将一段真实谈话分别对照每个项目的目标客户、必选条件、加分条件和排除项，判断是否适合该项目。不要强行归入某个项目；可同时匹配多个项目。fit 只能是 suitable（有明确证据支持且无明确排除项）、uncertain（信息不足或有矛盾）、unsuitable（有明确证据不符合或命中排除项）。不能因未提及而判为不合适。每条 evidence 必须是谈话原文连续逐字一致的片段。提供简短理由和下一步建议。输出严格 JSON：{"summary":"整体摘要","contact":{"name":"","company":"","role":""},"projects":[{"projectId":"项目ID","fit":"suitable|uncertain|unsuitable","summary":"匹配理由","evidence":["原文片段"],"nextStep":"建议"}],"followUp":"跟进消息草稿"}。contact 只填写谈话中被明确说出的访客姓名、公司、职位；未提及或不确定一律空字符串，禁止猜测。followUp 是一段可直接发给客户的跟进消息，只基于谈话中明确出现的信息，120 字以内；不要编造价格、承诺、时间或对方未提过的内容；信息不足时写成一句自然的确认问题。每个输入项目都必须输出一条结果，不要输出输入以外的项目。' },
         { role: 'user', content: JSON.stringify({ projects, conversation: text }) }
       ] })
     });
@@ -201,11 +201,33 @@ async function analyzeProjectsWithModel(text, rawProjects, config) {
     if (fit !== 'uncertain' && !evidence.length) fit = 'uncertain';
     return { projectId: project.id, projectName: project.name, fit, summary: String(found?.summary || '谈话依据不足，请核实。').slice(0, 500), evidence, nextStep: String(found?.nextStep || '补充确认关键信息。').slice(0, 500) };
   });
-  return { mode: 'llm', summary: String(result.summary || '谈话已整理。').slice(0, 500), projectMatches, contact: {
+  return { mode: 'llm', summary: String(result.summary || '谈话已整理。').slice(0, 500), projectMatches, followUp: String(result.followUp || '').trim().slice(0, 300), contact: {
     name: String(result.contact?.name || '').trim().slice(0, 60),
     company: String(result.contact?.company || '').trim().slice(0, 160),
     role: String(result.contact?.role || '').trim().slice(0, 60)
   } };
+}
+
+async function draftProjectWithModel(brief, config) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), config.timeoutMs || 30000);
+  let response;
+  try {
+    response = await config.fetch(`${config.baseUrl.replace(/\/$/, '')}/chat/completions`, {
+      method: 'POST', signal: controller.signal,
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.apiKey}` },
+      body: JSON.stringify({ model: config.model, temperature: 0.2, max_tokens: 700, messages: [
+        { role: 'system', content: '你是会展销售线索管理助手。根据用户对业务的简短描述，起草一个用于展会现场谈话归类的项目筛选标准。输出严格 JSON：{"name":"项目名称","targetCustomer":"目标客户，一句话","mustHave":["必选条件"],"niceToHave":["加分条件"],"disqualifiers":["排除项"]}。条件必须具体、可从谈话中直接判断，避免「有意向」这类空泛表述；不要编造用户没有提到的行业细节；全部用中文；每类 1-5 条。' },
+        { role: 'user', content: brief }
+      ] })
+    });
+  } finally { clearTimeout(timeout); }
+  if (!response.ok) throw new Error(`LLM request failed (${response.status})`);
+  const payload = await response.json();
+  const result = parseModelJson(payload?.choices?.[0]?.message?.content);
+  const [project] = normalizeProjects([{ ...result, id: `project-${Date.now()}` }]);
+  if (!project) throw new Error('生成结果缺少项目名称，请补充业务描述后重试。');
+  return project;
 }
 
 function sendJson(res, code, value, extraHeaders = {}) {
@@ -466,6 +488,19 @@ function createServer(options = {}) {
         catch (error) {
           const status = error.name === 'AbortError' ? 504 : 502;
           return sendJson(res, status, { error: status === 504 ? '模型 API 请求超时，请稍后重试。' : (error.message.includes('创建至少一个项目') ? error.message : '模型 API 分析失败，请检查服务商配置后重试。') });
+        }
+      }
+      if (req.method === 'POST' && url.pathname === '/api/agent/projects-draft') {
+        const data = await bodyJson(req);
+        const brief = typeof data.brief === 'string' ? data.brief.trim() : '';
+        if (!brief) return sendJson(res, 400, { error: 'brief is required' });
+        if (brief.length > 1200) return sendJson(res, 413, { error: '业务描述过长（最多 1200 字），请精简后重试。' });
+        if (!llmConfig.apiKey || !llmConfig.model || !llmConfig.fetch) return sendJson(res, 503, { error: '模型 API 未配置，请设置 LLM_API_KEY 和 LLM_MODEL 后重启服务。' });
+        if (!enforceAiLimit(req, res)) return;
+        try { return sendJson(res, 200, { project: await draftProjectWithModel(brief, llmConfig) }); }
+        catch (error) {
+          const status = error.name === 'AbortError' ? 504 : 502;
+          return sendJson(res, status, { error: status === 504 ? '模型 API 请求超时，请稍后重试。' : (error.message.includes('生成结果') ? error.message : '模型 API 起草失败，请检查服务商配置后重试。') });
         }
       }
       if (req.method === 'POST' && url.pathname === '/api/transcribe') {
