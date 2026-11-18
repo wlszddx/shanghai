@@ -24,3 +24,5 @@
 .project-match blockquote { margin: 8px 0; padding: 8px 12px; border-left: 3px solid #b6d9ca; background: #f5f9f7; }
 .project-match small { color: #66756e; }
 .send-button:disabled { opacity: .45; cursor: not-allowed; }
+.heading-actions { display: flex; align-items: center; gap: 7px; }
+@media (max-width: 700px) { .heading-actions .secondary-button { font-size: 0; padding: 9px 11px; } .heading-actions .secondary-button::before { content: "●"; font-size: 14px; } }

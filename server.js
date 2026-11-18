@@ -185,7 +185,7 @@ async function analyzeProjectsWithModel(text, rawProjects, config) {
       method: 'POST', signal: controller.signal,
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.apiKey}` },
       body: JSON.stringify({ model: config.model, temperature: 0, max_tokens: config.maxTokens || 1200, messages: [
-        { role: 'system', content: '你是展会销售线索匹配助手。将一段真实谈话分别对照每个项目的目标客户、必选条件、加分条件和排除项，判断是否适合该项目。不要强行归入某个项目；可同时匹配多个项目。fit 只能是 suitable（有明确证据支持且无明确排除项）、uncertain（信息不足或有矛盾）、unsuitable（有明确证据不符合或命中排除项）。不能因未提及而判为不合适。每条 evidence 必须是谈话原文连续逐字一致的片段。提供简短理由和下一步建议。输出严格 JSON：{"summary":"整体摘要","projects":[{"projectId":"项目ID","fit":"suitable|uncertain|unsuitable","summary":"匹配理由","evidence":["原文片段"],"nextStep":"建议"}]}。每个输入项目都必须输出一条结果，不要输出输入以外的项目。' },
+        { role: 'system', content: '你是展会销售线索匹配助手。将一段真实谈话分别对照每个项目的目标客户、必选条件、加分条件和排除项，判断是否适合该项目。不要强行归入某个项目；可同时匹配多个项目。fit 只能是 suitable（有明确证据支持且无明确排除项）、uncertain（信息不足或有矛盾）、unsuitable（有明确证据不符合或命中排除项）。不能因未提及而判为不合适。每条 evidence 必须是谈话原文连续逐字一致的片段。提供简短理由和下一步建议。输出严格 JSON：{"summary":"整体摘要","contact":{"name":"","company":"","role":""},"projects":[{"projectId":"项目ID","fit":"suitable|uncertain|unsuitable","summary":"匹配理由","evidence":["原文片段"],"nextStep":"建议"}]}。contact 只填写谈话中被明确说出的访客姓名、公司、职位；未提及或不确定一律空字符串，禁止猜测。每个输入项目都必须输出一条结果，不要输出输入以外的项目。' },
         { role: 'user', content: JSON.stringify({ projects, conversation: text }) }
       ] })
     });
@@ -201,7 +201,11 @@ async function analyzeProjectsWithModel(text, rawProjects, config) {
     if (fit !== 'uncertain' && !evidence.length) fit = 'uncertain';
     return { projectId: project.id, projectName: project.name, fit, summary: String(found?.summary || '谈话依据不足，请核实。').slice(0, 500), evidence, nextStep: String(found?.nextStep || '补充确认关键信息。').slice(0, 500) };
   });
-  return { mode: 'llm', summary: String(result.summary || '谈话已整理。').slice(0, 500), projectMatches };
+  return { mode: 'llm', summary: String(result.summary || '谈话已整理。').slice(0, 500), projectMatches, contact: {
+    name: String(result.contact?.name || '').trim().slice(0, 60),
+    company: String(result.contact?.company || '').trim().slice(0, 160),
+    role: String(result.contact?.role || '').trim().slice(0, 60)
+  } };
 }
 
 function sendJson(res, code, value, extraHeaders = {}) {
@@ -498,7 +502,12 @@ function createServer(options = {}) {
         if (sttConfig.provider === 'tencent') {
           if (Number(result.code) !== 0) {
             console.error('tencent asr error:', result.code, result.message, result.request_id);
-            return sendJson(res, 502, { error: '腾讯云语音识别失败，请检查服务开通、引擎权限和录音内容。' });
+            const reasons = {
+              4001: '请求参数不正确', 4002: '鉴权失败，请检查密钥', 4003: '服务未开通', 4004: '资源包不可用，请确认资源包覆盖当前识别引擎',
+              4005: '账户欠费', 4006: '调用并发超限，请稍后重试', 4007: '音频解码失败，请重新录制', 4011: '录音文件过大', 4012: '没有录到音频'
+            };
+            const reason = reasons[Number(result.code)] || result.message || '请稍后重试';
+            return sendJson(res, 502, { error: `腾讯云语音识别失败：${reason}（${result.code}）` });
           }
           return sendJson(res, 200, normalizeTencentResult(result));
         }

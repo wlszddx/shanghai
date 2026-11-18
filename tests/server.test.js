@@ -189,7 +189,7 @@ test('projects persist per data directory and project classification keeps only 
       const project = sent.messages[1].content;
       assert.match(project, /项目甲/);
       return { ok: true, json: async () => ({ choices: [{ message: { content: JSON.stringify({
-        summary: '明确表达现阶段没有采购需求。', projects: [
+        summary: '明确表达现阶段没有采购需求。', contact: { name: ' 张三 ', company: '包装公司', role: '' }, projects: [
           { projectId: 'p1', fit: 'suitable', summary: '有意向', evidence: ['我们正在考虑下季度采购'], nextStep: '确认预算。' },
           { projectId: 'p2', fit: 'unsuitable', summary: '目前无采购需求', evidence: ['没有采购需求'], nextStep: '暂缓跟进。' }
         ]
@@ -206,6 +206,7 @@ test('projects persist per data directory and project classification keeps only 
   const classified = await request(server, 'POST', '/api/agent/classify', { text: '对方说：“我们目前没有采购需求。”', projects });
   assert.equal(classified.status, 200);
   const matches = classified.json().projectMatches;
+  assert.deepEqual(classified.json().contact, { name: '张三', company: '包装公司', role: '' });
   assert.equal(matches.length, 2);
   assert.equal(matches[0].fit, 'uncertain');
   assert.deepEqual(matches[0].evidence, []);

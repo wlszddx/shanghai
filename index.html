@@ -37,7 +37,7 @@
         <div class="top-actions"><div class="event-date"><span class="calendar-icon">◉</span>我的展会线索<span class="date-live">本机</span></div><button class="icon-button" aria-label="通知">♧</button><button class="help-button">? <span>帮助</span></button></div>
       </header>
       <section class="page-content">
-        <div class="page-heading"><div><div class="eyebrow"><span class="live-pulse"></span>EXPO LEAD WORKSPACE <span class="eyebrow-divider">/</span> 业务线索</div><h1 id="page-title">展会线索跟进 <span class="wave">✳</span></h1><p id="page-subtitle">记录现场真实交流，整理下一步跟进。</p></div><button class="primary-button" id="new-lead"><span>＋</span> 录入新线索</button></div>
+        <div class="page-heading"><div><div class="eyebrow"><span class="live-pulse"></span>EXPO LEAD WORKSPACE <span class="eyebrow-divider">/</span> 业务线索</div><h1 id="page-title">展会线索跟进 <span class="wave">✳</span></h1><p id="page-subtitle">记录现场真实交流，整理下一步跟进。</p></div><div class="heading-actions"><button class="secondary-button" id="quick-record" hidden>● 直接录音</button><button class="primary-button" id="new-lead"><span>＋</span> 录入新线索</button></div></div>
 
         <section class="metric-row" aria-label="线索概览">
           <article class="metric-card"><div class="metric-top"><span id="metric-total-label">我的线索</span><span class="metric-icon mint">▤</span></div><strong id="metric-total">0</strong><div class="metric-foot"><span class="metric-note" id="metric-total-note">你录入的记录</span><span class="foot-spacer"></span><span class="sparkline">本机</span></div></article>
@@ -65,7 +65,7 @@
     <form method="dialog" id="lead-form">
       <div class="dialog-heading"><div><span class="dialog-kicker">NEW EXPO LEAD</span><h2>录入一位新访客</h2></div><button class="dialog-close" value="cancel" aria-label="关闭">×</button></div>
       <label>访客姓名<input name="name" required placeholder="填写现场实际获得的信息" /></label>
-      <div class="form-grid"><label>公司 / 机构<input name="company" placeholder="可留空" /></label><label>职位<input name="role" placeholder="可留空" /></label></div>
+      <div class="form-grid"><label>公司 / 机构<input name="company" placeholder="可留空，AI 自动补充" /></label><label>职位<input name="role" placeholder="可留空，AI 自动补充" /></label></div>
       <label>真实交流记录<textarea name="note" rows="5" placeholder="可现场录音转写，也可直接输入。保存后自动匹配项目。未确认的信息请留空。"></textarea><div class="recording-controls"><button type="button" class="secondary-button" id="start-record" disabled>● 开始录音</button><button type="button" class="secondary-button" id="stop-record" hidden>■ 停止并转写</button><span id="record-status">语音转写服务未配置</span></div><small>转写文本和交流内容会发送给服务商配置的语音识别与模型服务。请先确认可以录音并用于业务分析。</small></label>
       <div class="dialog-actions"><button class="secondary-button" value="cancel">取消</button><button class="primary-button" id="save-lead" value="default">创建线索 <span>→</span></button></div>
     </form>
