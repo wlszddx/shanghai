@@ -35,7 +35,8 @@
 .agent-chain li.done { background: #e7f5ec; border-color: #bfe0cd; color: #216b48; }
 .agent-chain li.done::before { content: "✓ "; }
 .followup-draft { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; background: #f7fbf9; border: 1px dashed #cfe3d8; border-radius: 9px; padding: 12px 14px; }
-.followup-draft p { margin: 0; white-space: pre-wrap; line-height: 1.7; color: #2f3f38; font-size: 13px; }
+.followup-editor { flex: 1; min-height: 84px; margin: 0; padding: 8px 10px; border: 1px solid #d8e7de; border-radius: 7px; background: #fff; color: #2f3f38; font: inherit; font-size: 13px; line-height: 1.7; resize: vertical; }
+.followup-editor:focus { outline: none; border-color: #9fc9b2; box-shadow: 0 0 0 3px rgba(47, 107, 82, .08); }
 .followup-draft button { flex-shrink: 0; }
 @media (max-width: 700px) { .followup-draft { flex-direction: column; } }
 @media (max-width: 700px) { .heading-actions .secondary-button { font-size: 0; padding: 9px 11px; } .heading-actions .secondary-button::before { content: "●"; font-size: 14px; } }
