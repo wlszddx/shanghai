@@ -13,6 +13,9 @@ services:
       PREFERENCES_FILE: /app/data/preferences.json
     ports:
       - "127.0.0.1:4174:4173"
+    # 香港出口 DNS 会解析到不服务 flash 接口的节点（404），固定到大陆节点
+    extra_hosts:
+      - "asr.cloud.tencent.com:106.55.89.122"
     volumes:
       - agent-data:/app/data
     read_only: true
