@@ -217,7 +217,7 @@ async function draftProjectWithModel(brief, config) {
       method: 'POST', signal: controller.signal,
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.apiKey}` },
       body: JSON.stringify({ model: config.model, temperature: 0.2, max_tokens: 700, messages: [
-        { role: 'system', content: '你是会展销售线索管理助手。根据用户对业务的简短描述，起草一个用于展会现场谈话归类的项目筛选标准。输出严格 JSON：{"name":"项目名称","targetCustomer":"目标客户，一句话","mustHave":["必选条件"],"niceToHave":["加分条件"],"disqualifiers":["排除项"]}。条件必须具体、可从谈话中直接判断，避免「有意向」这类空泛表述；不要编造用户没有提到的行业细节；全部用中文；每类 1-5 条。' },
+        { role: 'system', content: '你是会展销售线索管理助手。根据用户对业务的简短描述，起草一个用于展会现场谈话归类的项目筛选标准。输出严格 JSON：{"name":"项目名称","targetCustomer":"目标客户，一句话","mustHave":["必选条件"],"niceToHave":["加分条件"],"disqualifiers":["排除项"]}。条件必须具体、可从谈话中直接判断，避免「有意向」这类空泛表述；只使用描述中出现的业务信息，不要新增描述中没有的客户特征、审批层级或时间要求；描述中的常规做法不要升级为必选条件；不要编造用户没有提到的行业细节；全部用中文；每类 1-5 条。' },
         { role: 'user', content: brief }
       ] })
     });

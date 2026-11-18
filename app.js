@@ -167,7 +167,17 @@
   function openEdit(lead) { const form = $('#lead-form'); form.reset(); form.dataset.transcriptSegments = JSON.stringify(lead.transcriptSegments || []); form.elements.name.value = lead.name; form.elements.company.value = lead.company || ''; form.elements.role.value = lead.role || ''; form.elements.note.value = lead.note || ''; $('#lead-dialog').dataset.editId = lead.id; $('#save-lead').textContent = '保存修改 →'; $('#start-record').disabled = !sttEnabled; $('#record-status').textContent = sttEnabled ? '可继续补录谈话；保存后重新匹配' : '语音转写尚未配置，可直接编辑谈话记录'; $('#stop-record').hidden = true; $('#start-record').hidden = false; $('#lead-dialog').showModal(); }
   function addLead(data) { const lead = { id: `manual-${Date.now()}`, ...data, projectMatches: [], transcriptSegments: data.transcriptSegments || [], avatar: data.name.slice(0, 1), tone: ['mint', 'amber', 'blue', 'lilac'][manualLeads().length % 4], status: 'new', time: new Date().toLocaleString('zh-CN'), tags: ['用户录入'], source: 'manual', summary: '', recommend: '', assessment: null, history: [['刚刚', '用户录入线索']] }; leads.unshift(lead); activeId = lead.id; filter = 'manual'; document.querySelectorAll('.filter-tab').forEach(button => button.classList.toggle('selected', button.dataset.filter === filter)); persist(); setView('inbox'); return lead; }
   async function analyze(lead, transcript = lead.note) { const text = String(transcript || '').trim(); if (!text) return; if (!projects.length) { toast('请先创建项目并设置筛选标准'); setView('criteria'); return; } toast('正在匹配各项目…'); try { const response = await fetch('/api/agent/classify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, projects }) }); if (!response.ok) { const detail = await response.json().catch(() => ({})); throw new Error(detail.error || '分析暂不可用'); } const result = await response.json(); lead.note = text; lead.projectMatches = result.projectMatches || []; lead.followUp = result.followUp || ''; const contact = result.contact || {}; for (const key of ['company', 'role']) { const value = String(contact[key] || '').trim(); if (!lead[key] && value) lead[key] = value.slice(0, key === 'company' ? 160 : 60); } if (lead.name === '未命名访客' && contact.name) { lead.name = contact.name; lead.avatar = lead.name.slice(0, 1); } lead.summary = result.summary; if (lead.status === 'new') lead.status = 'follow'; lead.recommend = lead.projectMatches.filter(item => item.fit !== 'unsuitable').map(item => `${item.projectName}：${item.nextStep}`).join('\n') || '当前没有匹配项目，可核对谈话与标准后再决定。'; lead.history.unshift(['刚刚', 'Agent 已按项目标准完成匹配']); persist(); render(); toast('匹配完成：请查看项目结果和原话依据'); } catch (error) { render(); toast(error.message || '分析暂不可用，请稍后重试'); } }
-  function copyText(value) { navigator.clipboard?.writeText(value).then(() => toast('已复制到剪贴板')).catch(() => toast('浏览器暂不支持复制')); }
+  function copyText(value) {
+    const fallback = () => {
+      const area = document.createElement('textarea');
+      area.value = value; area.style.position = 'fixed'; area.style.opacity = '0';
+      document.body.appendChild(area); area.select();
+      let ok = false; try { ok = document.execCommand('copy'); } catch { ok = false; }
+      area.remove(); toast(ok ? '已复制到剪贴板' : '复制失败，请手动选择文本');
+    };
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(value).then(() => toast('已复制到剪贴板'), fallback);
+    else fallback();
+  }
 
   let recorder = null, recordingChunks = [], recordingStartedAt = 0, recordingTimestamp = '';
   let voiceTimer = null, voiceContext = null;
