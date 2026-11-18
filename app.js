@@ -142,7 +142,7 @@
   function setView(next) { view = next; document.querySelectorAll('.nav-item[data-view]').forEach(node => node.classList.toggle('active', node.dataset.view === next)); $('#breadcrumb-current').textContent = next === 'pipeline' ? '测试数据' : next === 'insights' ? '我的统计' : next === 'criteria' ? '项目与标准' : '线索工作台'; $('#page-title').textContent = next === 'pipeline' ? '隔离测试数据' : next === 'insights' ? '我的跟进概况' : next === 'criteria' ? '项目与标准' : '展会线索跟进'; $('#page-subtitle').textContent = next === 'pipeline' ? '只有显式测试模式会读取公开数据。' : next === 'insights' ? '统计只基于你录入的业务线索。' : next === 'criteria' ? '先定义项目，再让 Agent 自动归类真实谈话。' : '录入或录音转写一次，自动匹配各个项目。'; $('.workspace-card').style.gridTemplateColumns = next === 'inbox' ? '' : '1fr'; $('.leads-panel').style.display = next === 'inbox' ? '' : 'none'; $('#new-lead').hidden = next !== 'inbox'; $('#quick-record').hidden = next !== 'inbox' || !sttEnabled; render(); }
   function openEdit(lead) { const form = $('#lead-form'); form.reset(); form.dataset.transcriptSegments = JSON.stringify(lead.transcriptSegments || []); form.elements.name.value = lead.name; form.elements.company.value = lead.company || ''; form.elements.role.value = lead.role || ''; form.elements.note.value = lead.note || ''; $('#lead-dialog').dataset.editId = lead.id; $('#save-lead').textContent = '保存修改 →'; $('#start-record').disabled = !sttEnabled; $('#record-status').textContent = sttEnabled ? '可继续补录谈话；保存后重新匹配' : '语音转写尚未配置，可直接编辑谈话记录'; $('#stop-record').hidden = true; $('#start-record').hidden = false; $('#lead-dialog').showModal(); }
   function addLead(data) { const lead = { id: `manual-${Date.now()}`, ...data, projectMatches: [], transcriptSegments: data.transcriptSegments || [], avatar: data.name.slice(0, 1), tone: ['mint', 'amber', 'blue', 'lilac'][manualLeads().length % 4], status: 'new', time: new Date().toLocaleString('zh-CN'), tags: ['用户录入'], source: 'manual', summary: '', recommend: '', assessment: null, history: [['刚刚', '用户录入线索']] }; leads.unshift(lead); activeId = lead.id; filter = 'manual'; document.querySelectorAll('.filter-tab').forEach(button => button.classList.toggle('selected', button.dataset.filter === filter)); persist(); setView('inbox'); return lead; }
-  async function analyze(lead, transcript = lead.note) { const text = String(transcript || '').trim(); if (!text) return; if (!projects.length) { toast('请先创建项目并设置筛选标准'); setView('criteria'); return; } toast('正在匹配各项目…'); try { const response = await fetch('/api/agent/classify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, projects }) }); if (!response.ok) { const detail = await response.json().catch(() => ({})); throw new Error(detail.error || '分析暂不可用'); } const result = await response.json(); lead.note = text; lead.projectMatches = result.projectMatches || []; const contact = result.contact || {}; for (const key of ['company', 'role']) { const value = String(contact[key] || '').trim(); if (!lead[key] && value) lead[key] = value.slice(0, key === 'company' ? 160 : 60); } lead.summary = result.summary; lead.recommend = lead.projectMatches.filter(item => item.fit !== 'unsuitable').map(item => `${item.projectName}：${item.nextStep}`).join('\n') || '当前没有匹配项目，可核对谈话与标准后再决定。'; lead.history.unshift(['刚刚', 'Agent 已按项目标准完成匹配']); persist(); render(); toast('匹配完成：请查看项目结果和原话依据'); } catch (error) { render(); toast(error.message || '分析暂不可用，请稍后重试'); } }
+  async function analyze(lead, transcript = lead.note) { const text = String(transcript || '').trim(); if (!text) return; if (!projects.length) { toast('请先创建项目并设置筛选标准'); setView('criteria'); return; } toast('正在匹配各项目…'); try { const response = await fetch('/api/agent/classify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, projects }) }); if (!response.ok) { const detail = await response.json().catch(() => ({})); throw new Error(detail.error || '分析暂不可用'); } const result = await response.json(); lead.note = text; lead.projectMatches = result.projectMatches || []; const contact = result.contact || {}; for (const key of ['company', 'role']) { const value = String(contact[key] || '').trim(); if (!lead[key] && value) lead[key] = value.slice(0, key === 'company' ? 160 : 60); } if (lead.name === '未命名访客' && contact.name) { lead.name = contact.name; lead.avatar = lead.name.slice(0, 1); } lead.summary = result.summary; lead.recommend = lead.projectMatches.filter(item => item.fit !== 'unsuitable').map(item => `${item.projectName}：${item.nextStep}`).join('\n') || '当前没有匹配项目，可核对谈话与标准后再决定。'; lead.history.unshift(['刚刚', 'Agent 已按项目标准完成匹配']); persist(); render(); toast('匹配完成：请查看项目结果和原话依据'); } catch (error) { render(); toast(error.message || '分析暂不可用，请稍后重试'); } }
   function copyText(value) { navigator.clipboard?.writeText(value).then(() => toast('已复制到剪贴板')).catch(() => toast('浏览器暂不支持复制')); }
 
   let recorder = null, recordingChunks = [], recordingStartedAt = 0, recordingTimestamp = '';
@@ -162,13 +162,18 @@
     const speechLevel = 0.015, silenceMs = 5000, maxMs = 120000, noSpeechMs = 12000;
     const status = $('#record-status');
     const startedAt = Date.now();
-    let speechFrames = 0, silenceStartedAt = 0;
+    let speechFrames = 0, silenceStartedAt = 0, shownSecond = -1;
     voiceTimer = setInterval(() => {
       if (!recorder || recorder.state !== 'recording') { stopVoiceMonitor(); return; }
       analyser.getFloatTimeDomainData(samples);
       let energy = 0;
       for (const value of samples) energy += value * value;
       const now = Date.now();
+      const elapsed = Math.floor((now - startedAt) / 1000);
+      if (elapsed !== shownSecond) {
+        shownSecond = elapsed;
+        status.textContent = `录音中 ${String(Math.floor(elapsed / 60)).padStart(2, '0')}:${String(elapsed % 60).padStart(2, '0')} · 停顿约 5 秒自动结束`;
+      }
       if (Math.sqrt(energy / samples.length) >= speechLevel) { speechFrames++; silenceStartedAt = 0; }
       else if (speechFrames >= 3) {
         if (!silenceStartedAt) silenceStartedAt = now;
@@ -201,6 +206,7 @@
           const segments = (result.segments || []).map(segment => ({ startMs: Math.max(0, Number(segment.startMs) || 0), endMs: Math.max(0, Number(segment.endMs) || 0), recordedAt: recordingTimestamp, text: String(segment.text || ''), ...(Number.isInteger(segment.speaker) ? { speaker: segment.speaker } : {}) }));
           $('#lead-form').dataset.transcriptSegments = JSON.stringify([...savedSegments, ...segments]);
           status.textContent = transcript ? `转写完成，已记录 ${segments.length} 段时间戳` : '未识别到语音，请手动补充谈话内容';
+          if (transcript && !$('#lead-form').elements.name.value.trim()) $('#lead-form').elements.name.focus();
         } catch (error) { status.textContent = error.message || '转写失败'; }
         $('#stop-record').hidden = true; $('#start-record').hidden = false;
       };
@@ -210,9 +216,21 @@
   $('#start-record').onclick = startRecording;
   $('#quick-record').onclick = () => { $('#new-lead').click(); startRecording(); };
   $('#stop-record').onclick = () => { if (recorder?.state === 'recording') recorder.stop(); };
+  const cancelGuard = event => { if (recorder?.state === 'recording') { event.preventDefault(); toast('正在录音，请先停止或等待自动结束'); } };
+  document.querySelectorAll('#lead-dialog button[value="cancel"]').forEach(button => button.addEventListener('click', cancelGuard));
+  $('#lead-dialog').addEventListener('cancel', cancelGuard);
+  const sampleTranscript = ['说话人1：您好，我们是做视觉检测设备的，想了解下你们产线的情况。', '说话人2：现在产线上人工检测效率比较低，正在看视觉检测改造方案，预算还在审批，计划明年一季度先做一条试点线。', '说话人1：这次决策人也有参与吗？', '说话人2：我和生产总监一起来的，他下午会过来。'];
+  $('#load-sample').onclick = () => {
+    const form = $('#lead-form'), existing = form.elements.note.value.trim();
+    form.elements.note.value = [existing, sampleTranscript.join('\n')].filter(Boolean).join('\n');
+    const saved = JSON.parse(form.dataset.transcriptSegments || '[]'), now = new Date().toISOString();
+    form.dataset.transcriptSegments = JSON.stringify([...saved, ...sampleTranscript.map((text, index) => ({ startMs: index * 5000, endMs: index * 5000 + 4200, recordedAt: now, text }))]);
+    if (!form.elements.name.value.trim()) form.elements.name.value = '示例访客';
+    $('#record-status').textContent = '已载入示例对话，可直接保存并分析';
+  };
   $('#new-lead').onclick = () => { const form = $('#lead-form'); form.reset(); delete form.dataset.transcriptSegments; $('#lead-dialog').dataset.editId = ''; $('#save-lead').textContent = '保存并分析 →'; $('#start-record').disabled = !sttEnabled; $('#record-status').textContent = sttEnabled ? '可录音并转写，保存后自动匹配项目' : '语音转写尚未配置，可直接输入谈话记录'; $('#stop-record').hidden = true; $('#start-record').hidden = false; $('#lead-dialog').showModal(); };
   $('#add-lead-row').onclick = () => $('#new-lead').click();
-  $('#lead-form').addEventListener('submit', event => { event.preventDefault(); const form = event.currentTarget, data = { name: form.elements.name.value.trim(), company: form.elements.company.value.trim(), role: form.elements.role.value.trim(), note: form.elements.note.value.trim(), transcriptSegments: JSON.parse(form.dataset.transcriptSegments || '[]') }; if (!data.name) return; const id = $('#lead-dialog').dataset.editId; let lead; if (id) { lead = manualLeads().find(item => item.id === id); if (lead) { const transcriptChanged = lead.note !== data.note; Object.assign(lead, data); lead.avatar = data.name.slice(0, 1); if (transcriptChanged) { lead.projectMatches = []; lead.assessment = null; lead.summary = ''; lead.recommend = ''; } persist(); render(); toast('线索已保存'); } } else lead = addLead(data); $('#lead-dialog').close(); if (lead?.note) analyze(lead, lead.note); });
+  $('#lead-form').addEventListener('submit', event => { event.preventDefault(); const form = event.currentTarget, nameInput = form.elements.name.value.trim(); const data = { name: nameInput || '未命名访客', company: form.elements.company.value.trim(), role: form.elements.role.value.trim(), note: form.elements.note.value.trim(), transcriptSegments: JSON.parse(form.dataset.transcriptSegments || '[]') }; if (!nameInput && !data.note) { toast('请先录入谈话内容或填写姓名'); return; } const id = $('#lead-dialog').dataset.editId; let lead; if (id) { lead = manualLeads().find(item => item.id === id); if (lead) { const transcriptChanged = lead.note !== data.note; Object.assign(lead, data); lead.avatar = data.name.slice(0, 1); if (transcriptChanged) { lead.projectMatches = []; lead.assessment = null; lead.summary = ''; lead.recommend = ''; } persist(); render(); toast('线索已保存'); } } else lead = addLead(data); $('#lead-dialog').close(); if (lead?.note) analyze(lead, lead.note); });
   document.querySelectorAll('.filter-tab').forEach(button => button.onclick = () => { filter = button.dataset.filter; document.querySelectorAll('.filter-tab').forEach(item => item.classList.toggle('selected', item === button)); renderList(); if (!visibleLeads().some(lead => lead.id === activeId)) { activeId = visibleLeads()[0]?.id || null; renderDetail(); } });
   document.querySelectorAll('.nav-item[data-view]').forEach(button => button.onclick = () => setView(button.dataset.view));
   $('#view-all').onclick = () => setView(testMode ? 'pipeline' : 'criteria'); $('.help-button').onclick = () => toast('先在“项目与标准”创建项目，再录入或录音转写谈话'); $('.icon-button').onclick = () => toast(demoMode ? '演示数据只保存在你的浏览器' : '线索保存在服务端业务数据中');
@@ -241,6 +259,7 @@
       $('.event-date').innerHTML = '<span class="calendar-icon">◉</span>展小助公开演示<span class="date-live">DEMO</span>';
       $('.eyebrow').innerHTML = '<span class="live-pulse"></span>PUBLIC DEMO <span class="eyebrow-divider">/</span> 浏览器本机数据';
       $('.footer-note').innerHTML = '<span class="secure-icon">◈</span> 演示数据只保存在你的浏览器 <span class="footer-sep">·</span> 不会写入服务器 <span class="footer-right">可随时重置 <span>✓</span></span>';
+      $('#load-sample').hidden = false;
     } else {
       $('.workspace-switch strong').textContent = testMode ? '测试工作区' : '我的工作区'; $('.workspace-switch small').textContent = testMode ? '测试数据与业务线索隔离' : '本机业务数据';
       $('.event-date').innerHTML = `<span class="calendar-icon">◉</span>${testMode ? '隔离测试模式' : '我的展会线索'}<span class="date-live">${testMode ? 'TEST' : '本机'}</span>`;
