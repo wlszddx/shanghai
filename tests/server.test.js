@@ -41,6 +41,16 @@ test('default business mode does not load or expose the test fixture', async t =
   assert.equal((await request(server, 'GET', '/api/test-data.csv')).status, 404);
 });
 
+test('version endpoint reports the baked build commit', async t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'expo-copilot-test-'));
+  const versionFile = path.join(dir, 'VERSION');
+  const sha = 'a375beb1f325a2e1e57d5ebdac74e5b72583a449';
+  fs.writeFileSync(versionFile, `${sha} 2026-11-18T09:00:00Z\n`);
+  const server = createServer({ testMode: false, dataFile: path.join(dir, 'leads.json'), versionFile });
+  t.after(() => { server.close(); fs.rmSync(dir, { recursive: true, force: true }); });
+  assert.deepEqual((await request(server, 'GET', '/api/version')).json(), { service: 'expo-lead-agent', commit: sha, builtAt: '2026-11-18T09:00:00Z' });
+});
+
 test('test mode exposes fixture separately and never persists test records as leads', async t => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'expo-copilot-test-'));
   const dataFile = path.join(dir, 'leads.json');

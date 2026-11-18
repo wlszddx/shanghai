@@ -29,6 +29,19 @@ docker compose logs -f
 
 在 `.env` 中填写服务商提供的 `LLM_API_KEY`、`LLM_MODEL`，如有需要再填写 `LLM_BASE_URL`。腾讯云语音转写需在控制台开通「录音文件识别极速版」，然后填写 `TENCENTCLOUD_APP_ID`、`TENCENTCLOUD_SECRET_ID`、`TENCENTCLOUD_SECRET_KEY`，默认引擎为 `16k_zh_en`。密钥只保存在服务器 `.env`，请勿提交到 Git 或发在聊天里。访问或配置反向代理时使用 `http://127.0.0.1:4174`。容器更新用 `docker compose up -d --build`，停止用 `docker compose down`；不要添加 `-v`，这样可保留线索数据。反向代理应配置 HTTPS 和登录保护后再对外提供访问。
 
+### 按提交部署
+
+服务器上的项目目录不是 git 仓库。把 `deploy.sh` 下载到 `/home/ubuntu`，传入已推送的完整提交 SHA：
+
+```bash
+curl -fL -o deploy.sh https://raw.githubusercontent.com/wlszddx/shanghai/main/deploy.sh
+chmod +x deploy.sh
+./deploy.sh <40 位提交 SHA>
+curl -s http://127.0.0.1:4174/api/version
+```
+
+脚本固定下载该提交的源码包，备份当前运行文件，用 `GIT_COMMIT`/`BUILD_TIME` 构建参数重建镜像，等待健康检查，并校验 `/api/version` 返回的提交号与目标一致后才输出 `LIVE`。手工执行 `docker compose up -d --build` 不会带构建参数，版本会显示为 `dev`。
+
 若服务器使用 Nginx，可为本应用单独分配一个子域名，并在该子域名的 HTTPS `server` 块中加入：
 
 ```nginx

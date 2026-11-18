@@ -13,6 +13,14 @@ const PROJECTS_FILE = process.env.PROJECTS_FILE || path.join(path.dirname(DATA_F
 const FIXTURE = path.join(ROOT, 'tests', 'fixtures', 'uci-bank-marketing', 'bank-full.csv');
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8' };
 
+function readVersion(file = path.join(ROOT, 'VERSION')) {
+  try {
+    const [commit, builtAt] = fs.readFileSync(file, 'utf8').trim().split(/\s+/);
+    if (commit) return { commit, builtAt: builtAt || null };
+  } catch {}
+  return { commit: 'dev', builtAt: null };
+}
+
 function parseCsvLine(line) {
   const fields = [];
   let value = '', quoted = false;
@@ -387,6 +395,7 @@ function createServer(options = {}) {
   const sttEnabled = () => sttConfig.provider === 'tencent'
     ? Boolean(sttConfig.appId && sttConfig.secretId && sttConfig.secretKey && sttConfig.model && sttConfig.fetch)
     : Boolean(sttConfig.apiKey && sttConfig.model && sttConfig.baseUrl && sttConfig.fetch);
+  const version = options.version || readVersion(options.versionFile);
   const trustProxy = options.trustProxy ?? ['1', 'true'].includes(String(process.env.TRUST_PROXY || '').toLowerCase());
   const maxTranscriptChars = positiveInt(options.maxTranscriptChars ?? process.env.MAX_TRANSCRIPT_CHARS, 20000);
   const rateLimits = {
@@ -422,6 +431,7 @@ function createServer(options = {}) {
         sttEnabled: sttEnabled()
       });
       if (req.method === 'GET' && url.pathname === '/api/health') return sendJson(res, 200, { ok: true, mode: demoMode ? 'demo' : testMode ? 'test' : 'business' });
+      if (req.method === 'GET' && url.pathname === '/api/version') return sendJson(res, 200, { service: 'expo-lead-agent', ...version });
       if (req.method === 'GET' && url.pathname === '/api/leads') return sendJson(res, 200, { leads: demoMode ? [] : readLeads(dataFile) });
       if (req.method === 'GET' && url.pathname === '/api/preferences') {
         if (demoMode) return sendJson(res, 200, { preferences: normalizePreferences({}) });
