@@ -35,3 +35,4 @@
 @media (max-width: 700px) { .followup-draft { flex-direction: column; } }
 @media (max-width: 700px) { .heading-actions .secondary-button { font-size: 12px; padding: 8px 10px; } }
 @media (max-width: 700px) { .detail-top { flex-wrap: wrap; gap: 10px; } .detail-person { min-width: 0; } .detail-actions { width: 100%; justify-content: flex-end; } .detail-name { font-size: 17px; flex-wrap: wrap; } .lead-score-card { grid-template-columns: 1fr; } .composer-head { flex-wrap: wrap; } }
+@media (max-width: 700px) { .page-heading { flex-wrap: wrap; } .heading-actions { width: 100%; justify-content: flex-end; gap: 8px; } #quick-record { white-space: nowrap; } }
