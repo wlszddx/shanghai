@@ -265,7 +265,6 @@ function transcribeWithTencent(audio, config) {
     filter_punc: '0', first_channel_only: '1', hotword_id: '', secretid: config.secretId,
     speaker_diarization: config.speakerDiarization ? '1' : '0', timestamp: String(Math.floor(Date.now() / 1000)), voice_format: 'wav', word_info: '1'
   });
-  if (config.speakerDiarization && config.speakerNumber > 0) params.set('speaker_number', String(config.speakerNumber));
   const authorization = tencentSignature(config.secretKey, host, pathName, params);
   return config.fetch(`https://${host}${pathName}?${params.toString()}`, {
     method: 'POST', headers: { Authorization: authorization, 'Content-Type': 'application/octet-stream', 'Content-Length': String(audio.length) },
@@ -356,11 +355,9 @@ function createServer(options = {}) {
     appId: process.env.TENCENTCLOUD_APP_ID || '', secretId: process.env.TENCENTCLOUD_SECRET_ID || '', secretKey: process.env.TENCENTCLOUD_SECRET_KEY || '',
     model: process.env.STT_MODEL || (process.env.TENCENTCLOUD_APP_ID ? '16k_zh_en' : ''),
     speakerDiarization: process.env.STT_SPEAKER_DIARIZATION !== '0',
-    speakerNumber: positiveInt(process.env.STT_SPEAKER_NUMBER, 2),
     fetch: options.fetch || globalThis.fetch, transcode: options.transcode || transcodeToWav, timeoutMs: 120000
   };
   if (sttConfig.speakerDiarization === undefined) sttConfig.speakerDiarization = process.env.STT_SPEAKER_DIARIZATION !== '0';
-  if (sttConfig.speakerNumber === undefined) sttConfig.speakerNumber = positiveInt(process.env.STT_SPEAKER_NUMBER, 2);
   const sttEnabled = () => sttConfig.provider === 'tencent'
     ? Boolean(sttConfig.appId && sttConfig.secretId && sttConfig.secretKey && sttConfig.model && sttConfig.fetch)
     : Boolean(sttConfig.apiKey && sttConfig.model && sttConfig.baseUrl && sttConfig.fetch);

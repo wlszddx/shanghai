@@ -249,7 +249,7 @@ test('Tencent ASR accepts browser audio, signs the request, converts returned ti
       assert.equal(parsed.searchParams.get('engine_type'), '16k_zh_en');
       assert.equal(parsed.searchParams.get('voice_format'), 'wav');
       assert.equal(parsed.searchParams.get('speaker_diarization'), '1');
-      assert.equal(parsed.searchParams.get('speaker_number'), '2');
+      assert.equal(parsed.searchParams.has('speaker_number'), false);
       assert.equal(options.method, 'POST');
       assert.equal(options.headers['Content-Type'], 'application/octet-stream');
       assert.equal(options.body.toString(), 'wav-audio');
