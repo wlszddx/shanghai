@@ -489,12 +489,20 @@ function createServer(options = {}) {
             });
           }
         } catch (error) {
+          console.error('transcribe request failed:', sttConfig.provider, error.message);
           return sendJson(res, error.name === 'AbortError' ? 504 : 502, { error: error.name === 'AbortError' ? '语音转写请求超时，请稍后重试。' : '语音转写服务暂不可用，请检查服务器依赖与服务配置。' });
         } finally { clearTimeout(timeout); }
-        if (!response.ok) return sendJson(res, 502, { error: '语音转写服务调用失败，请检查后端语音服务配置。' });
+        if (!response.ok) {
+          const detail = await response.text().catch(() => '');
+          console.error('transcribe provider HTTP error:', sttConfig.provider, response.status, detail.slice(0, 500));
+          return sendJson(res, 502, { error: '语音转写服务调用失败，请检查后端语音服务配置。' });
+        }
         const result = await response.json();
         if (sttConfig.provider === 'tencent') {
-          if (Number(result.code) !== 0) return sendJson(res, 502, { error: '腾讯云语音识别失败，请检查服务开通、引擎权限和录音内容。' });
+          if (Number(result.code) !== 0) {
+            console.error('tencent asr error:', result.code, result.message, result.request_id);
+            return sendJson(res, 502, { error: '腾讯云语音识别失败，请检查服务开通、引擎权限和录音内容。' });
+          }
           return sendJson(res, 200, normalizeTencentResult(result));
         }
         const segments = Array.isArray(result.segments) ? result.segments.slice(0, 1000).map(segment => ({ startMs: Math.max(0, Number(segment.start || 0) * 1000), endMs: Math.max(0, Number(segment.end || 0) * 1000), text: String(segment.text || '').trim() })).filter(segment => segment.text) : [];
