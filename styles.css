@@ -36,3 +36,5 @@
 @media (max-width: 700px) { .heading-actions .secondary-button { font-size: 12px; padding: 8px 10px; } }
 @media (max-width: 700px) { .detail-top { flex-wrap: wrap; gap: 10px; } .detail-person { min-width: 0; } .detail-actions { width: 100%; justify-content: flex-end; } .detail-name { font-size: 17px; flex-wrap: wrap; } .lead-score-card { grid-template-columns: 1fr; } .composer-head { flex-wrap: wrap; } }
 @media (max-width: 700px) { .page-heading { flex-wrap: wrap; } .heading-actions { width: 100%; justify-content: flex-end; gap: 8px; } #quick-record { white-space: nowrap; } }
+.nav-short { display: none; }
+@media (max-width: 900px) { .sidebar { width: 74px; padding: 18px 8px; } .nav-item:not(.active), .nav-item.active { font-size: 10px; } .nav-item { flex-direction: column; justify-content: center; gap: 2px; height: 54px; width: 100%; margin: 0; padding: 5px 0; } .nav-item .nav-icon { font-size: 15px; width: auto; } .nav-label { display: none; } .nav-short { display: inline; font-size: 9px; line-height: 1; } .workspace-switch { width: 52px; height: 52px; } }

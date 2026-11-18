@@ -309,7 +309,7 @@
     $('.filter-tab[data-filter="manual"]').innerHTML = `${testMode ? '我的线索' : '用户录入'} <span id="filter-manual-count">0</span>`;
     $('.filter-tab[data-filter="manual"]').hidden = !testMode;
     document.querySelector('[data-view="pipeline"]').hidden = !testMode;
-    document.querySelector('[data-view="insights"]').innerHTML = '<span class="nav-icon">⌁</span>我的统计';
+    document.querySelector('[data-view="insights"]').innerHTML = '<span class="nav-icon">⌁</span><span class="nav-label">我的统计</span><span class="nav-short">统计</span>';
     const users = manualLeads(); activeId = users[0]?.id || (testMode ? testRecords[0]?.id : null); filter = 'all'; render(); if (!projects.length && !testMode) setView('criteria');
   }
   init();
