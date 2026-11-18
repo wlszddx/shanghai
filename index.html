@@ -17,7 +17,7 @@
         <span class="brand-mark"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 22.5 15.8 7l9.1 15.5H7Z"/><path d="M13.1 22.5 18 14l7 8.5h-12Z" class="brand-cut"/></svg></span>
         <span><strong>展小助</strong><small>EXPO COPILOT</small></span>
       </a>
-      <div class="workspace-switch"><span class="workspace-avatar">E</span><span class="workspace-label"><strong>我的工作区</strong><small>本机业务数据</small></span><span class="chevron">⌄</span></div>
+      <div class="workspace-switch"><span class="workspace-avatar">E</span><span class="workspace-label"><strong>我的工作台</strong><small>展会销售线索</small></span><span class="chevron">⌄</span></div>
       <div class="nav-caption">工作台</div>
       <nav class="main-nav" aria-label="主导航">
         <button class="nav-item active" data-view="inbox"><span class="nav-icon">◈</span>线索工作台<span class="nav-count" id="nav-count">0</span></button>
@@ -26,47 +26,47 @@
         <button class="nav-item" data-view="criteria"><span class="nav-icon">☷</span>项目与标准</button>
       </nav>
       <div class="sidebar-bottom">
-        <div class="event-card"><span class="event-dot"></span><strong>业务工作区</strong><small>只保存你录入的展会线索</small><div class="event-progress"><i></i></div><small>数据保存在本机</small></div>
-        <div class="user-profile"><div class="user-avatar">✓</div><div><strong>本机存储</strong><small>用户提供的数据</small></div><span class="more">···</span></div>
+        <div class="event-card"><span class="event-dot"></span><strong>线索工作区</strong><small>记录、判断、跟进</small><div class="event-progress"><i></i></div><small id="sidebar-storage">数据保存在当前浏览器</small></div>
+        <div class="user-profile"><div class="user-avatar">✓</div><div><strong>销售工作区</strong><small>展会销售</small></div><span class="more">···</span></div>
       </div>
     </aside>
 
     <main class="main-area">
       <header class="topbar">
         <div class="breadcrumbs"><span>工作台</span><b>/</b><strong id="breadcrumb-current">线索工作台</strong></div>
-        <div class="top-actions"><div class="event-date"><span class="calendar-icon">◉</span>我的展会线索<span class="date-live">本机</span></div><button class="icon-button" aria-label="通知">♧</button><button class="help-button">? <span>帮助</span></button></div>
+        <div class="top-actions"><div class="event-date"><span class="calendar-icon">◉</span>我的展会线索</div><button class="icon-button" aria-label="通知">♧</button><button class="help-button">? <span>帮助</span></button></div>
       </header>
       <section class="page-content">
-        <div class="page-heading"><div><div class="eyebrow"><span class="live-pulse"></span>EXPO LEAD WORKSPACE <span class="eyebrow-divider">/</span> 业务线索</div><h1 id="page-title">展会线索跟进 <span class="wave">✳</span></h1><p id="page-subtitle">记录现场真实交流，整理下一步跟进。</p></div><div class="heading-actions"><button class="secondary-button" id="quick-record" hidden>● 直接录音</button><button class="primary-button" id="new-lead"><span>＋</span> 录入新线索</button></div></div>
+        <div class="page-heading"><div><div class="eyebrow"><span class="live-pulse"></span>EXPO LEAD WORKSPACE</div><h1 id="page-title">展会线索跟进 <span class="wave">✳</span></h1><p id="page-subtitle">记录现场真实交流，整理下一步跟进。</p></div><div class="heading-actions"><button class="secondary-button" id="quick-record" hidden>● 直接录音</button><button class="primary-button" id="new-lead"><span>＋</span> 录入新线索</button></div></div>
 
         <section class="metric-row" aria-label="线索概览">
-          <article class="metric-card"><div class="metric-top"><span id="metric-total-label">我的线索</span><span class="metric-icon mint">▤</span></div><strong id="metric-total">0</strong><div class="metric-foot"><span class="metric-note" id="metric-total-note">你录入的记录</span><span class="foot-spacer"></span><span class="sparkline">本机</span></div></article>
-          <article class="metric-card"><div class="metric-top"><span id="metric-hot-label">已完成跟进</span><span class="metric-icon orange">✓</span></div><strong id="metric-hot">0</strong><div class="metric-foot"><span class="metric-note">用户标记</span><span class="foot-spacer"></span><span class="tiny-bars"><i></i><i></i><i></i><i></i><i></i></span></div></article>
-          <article class="metric-card"><div class="metric-top"><span id="metric-negative-label">待跟进线索</span><span class="metric-icon blue">—</span></div><strong id="metric-negative">0</strong><div class="metric-foot"><span class="metric-note">用户标记</span><span class="foot-spacer"></span><span class="progress-ring"></span></div></article>
-          <article class="metric-card assistant-metric"><div class="metric-top"><span id="metric-rate-label">当前记录完成比例</span><span class="metric-icon violet">%</span></div><strong id="metric-rate">—</strong><div class="metric-foot"><span class="metric-note" id="metric-rate-note">录入线索后显示</span><span class="foot-spacer"></span><span class="sparkline violet-line">LOCAL</span></div></article>
+          <article class="metric-card"><div class="metric-top"><span id="metric-total-label">全部线索</span><span class="metric-icon mint">▤</span></div><strong id="metric-total">0</strong><div class="metric-foot"><span class="metric-note" id="metric-total-note">累计记录</span><span class="foot-spacer"></span><span class="sparkline">TOTAL</span></div></article>
+          <article class="metric-card"><div class="metric-top"><span id="metric-hot-label">已完成跟进</span><span class="metric-icon orange">✓</span></div><strong id="metric-hot">0</strong><div class="metric-foot"><span class="metric-note">已跟进</span><span class="foot-spacer"></span><span class="tiny-bars"><i></i><i></i><i></i><i></i><i></i></span></div></article>
+          <article class="metric-card"><div class="metric-top"><span id="metric-negative-label">待跟进</span><span class="metric-icon blue">—</span></div><strong id="metric-negative">0</strong><div class="metric-foot"><span class="metric-note">剩余</span><span class="foot-spacer"></span><span class="progress-ring"></span></div></article>
+          <article class="metric-card assistant-metric"><div class="metric-top"><span id="metric-rate-label">跟进完成率</span><span class="metric-icon violet">%</span></div><strong id="metric-rate">—</strong><div class="metric-foot"><span class="metric-note" id="metric-rate-note">已跟进占比</span><span class="foot-spacer"></span><span class="sparkline violet-line">RATE</span></div></article>
         </section>
 
         <section class="workspace-card">
           <div class="leads-panel">
-            <div class="panel-heading"><div><h2>我的线索 <span class="heading-count" id="list-count">0</span></h2><p>只展示你录入的展会线索</p></div><button class="text-action" id="view-all">数据说明 <span>→</span></button></div>
+            <div class="panel-heading"><div><h2>线索 <span class="heading-count" id="list-count">0</span></h2><p>现场记录与跟进状态</p></div><button class="text-action" id="view-all">项目标准 <span>→</span></button></div>
             <div class="lead-toolbar"><div class="filter-tabs"><button class="filter-tab selected" data-filter="all">全部线索 <span id="filter-all-count">0</span></button><button class="filter-tab" data-filter="positive" hidden>y = yes <span id="filter-positive-count">0</span></button><button class="filter-tab" data-filter="negative" hidden>y = no <span id="filter-negative-count">0</span></button><button class="filter-tab" data-filter="manual" hidden>我的线索 <span id="filter-manual-count">0</span></button></div><button class="sort-button" aria-label="排序" hidden>⇅ <span id="sort-label">排序</span></button></div>
             <div class="lead-list" id="lead-list"></div>
-            <button class="add-lead-row" id="add-lead-row"><span>＋</span> 录入一条自己的线索</button>
+            <button class="add-lead-row" id="add-lead-row"><span>＋</span> 新增线索</button>
           </div>
 
           <div class="detail-panel" id="detail-panel"></div>
         </section>
-        <footer class="footer-note"><span class="secure-icon">◈</span> 线索保存在本机 <span class="footer-sep">·</span> 测试数据不会进入业务线索 <span class="footer-right">用户提供的数据 <span>✓</span></span></footer>
+        <footer class="footer-note"><span class="secure-icon">◈</span> <span id="footer-storage">数据仅保存在当前浏览器</span> <span class="footer-sep">·</span> 录音与谈话内容仅用于转写和线索分析 <span class="footer-right">展小助</span></footer>
       </section>
     </main>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <dialog class="lead-dialog" id="lead-dialog">
     <form method="dialog" id="lead-form">
-      <div class="dialog-heading"><div><span class="dialog-kicker">NEW EXPO LEAD</span><h2>录入一位新访客</h2></div><button class="dialog-close" value="cancel" aria-label="关闭">×</button></div>
+      <div class="dialog-heading"><div><span class="dialog-kicker">NEW LEAD</span><h2>录入一位新访客</h2></div><button class="dialog-close" value="cancel" aria-label="关闭">×</button></div>
       <label>访客姓名<input name="name" placeholder="可留空，稍后补充" /></label>
-      <div class="form-grid"><label>公司 / 机构<input name="company" placeholder="可留空，AI 自动补充" /></label><label>职位<input name="role" placeholder="可留空，AI 自动补充" /></label></div>
-      <label>真实交流记录<textarea name="note" rows="5" placeholder="可现场录音转写，也可直接输入。保存后自动匹配项目。未确认的信息请留空。"></textarea><div class="recording-controls"><button type="button" class="secondary-button" id="start-record" disabled>● 开始录音</button><button type="button" class="secondary-button" id="stop-record" hidden>■ 停止并转写</button><span id="record-status">语音转写服务未配置</span></div><button type="button" class="text-action load-sample" id="load-sample" hidden>没有麦克风？载入一段示例对话 →</button><small>转写文本和交流内容会发送给服务商配置的语音识别与模型服务。请先确认可以录音并用于业务分析。</small></label>
+      <div class="form-grid"><label>公司 / 机构<input name="company" placeholder="可留空，分析后自动补充" /></label><label>职位<input name="role" placeholder="可留空，分析后自动补充" /></label></div>
+      <label>真实交流记录<textarea name="note" rows="5" placeholder="可现场录音转写，也可直接输入。保存后自动匹配项目。未确认的信息请留空。"></textarea><div class="recording-controls"><button type="button" class="secondary-button" id="start-record" disabled>● 开始录音</button><button type="button" class="secondary-button" id="stop-record" hidden>■ 停止并转写</button><span id="record-status">语音转写服务未配置</span></div><button type="button" class="text-action load-sample" id="load-sample" hidden>没有麦克风？载入一段示例对话 →</button><small>录音仅用于转写和线索分析，处理服务由部署方提供。请确认已获得对方同意。</small></label>
       <div class="dialog-actions"><button class="secondary-button" value="cancel">取消</button><button class="primary-button" id="save-lead" value="default">保存并分析 <span>→</span></button></div>
     </form>
   </dialog>
